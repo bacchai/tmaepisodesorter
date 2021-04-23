@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0">
+<title>Picker</title>
+<style>
+body {
+    background:#FFF;
+    color:#000;
+    font-family:verdana, sans-serif;
+    font-size:10pt;
+    margin:0;
+    padding:10px;
+}
+
+a:link, a:visited {
+    color:#008;
+    font-weight:bold;
+    text-decoration:none;
+}
+
+a:active, a:hover {
+    color:#ACF;
+}
+
+.info {
+    font-weight:bold;
+}
+
+button {
+    font-family:inherit;
+    cursor:pointer;
+    border:0;
+    border-radius:3px;
+    padding:0.3em 0.5em;
+    background:#CCC;
+    color:#000;
+}
+
+button:hover {
+    background:#DDD;
+}
+
+button.disabled {
+    background:#DDD;
+    color:#888;
+    cursor:not-allowed;
+}
+
+button.disabled:hover {
+    background:#DDD;
+}
+
+#container {
+    position:relative;
+    margin-left:-10px;
+    margin-right:-10px;
+    padding:10px;
+    overflow:hidden;
+}
+
+@media (min-width:1024px) {
+    /* Put the found favorites beside the picking div when the window is sufficiently large */
+    #picking {
+        float:left;
+        width:636px;
+    }
+
+    #secondary {
+        margin-left:646px;
+    }
+}
+
+@media (min-width:1300px) {
+    /* Once we get to the point where 636px is less than half of the width of the screen, make the picking div just take up half */
+    #picking {
+        width:50%;
+    }
+
+    #secondary {
+        margin-left:51%;
+    }
+}
+
+#pick {
+    background:#58F;
+    color:#FFF;
+    font-size:larger;
+    font-weight:bold;
+    width:6em;
+    border-radius:5px;
+    margin-right:10px;
+}
+
+#pick.disabled {
+    background:#ACF;
+}
+
+#pick:hover {
+    background:#ACF;
+}
+
+.item-list {
+    padding:0;
+    list-style-type:none;
+    line-height:100px;
+}
+
+.item-list li {
+    margin:0;
+    display:inline-block;
+    height:100px;
+    width:100px;
+    line-height:100px;
+    border:3px solid transparent;
+    text-align:center;
+    position:relative;
+    vertical-align:top;
+    overflow:hidden;
+    border-radius:100%;
+    background:#F7F7F7;
+    color:#000;
+}
+
+.item-list li img {
+    vertical-align:middle;
+    max-height:100%;
+    max-width:100%;
+}
+
+.item-list li span {
+    display:inline-block;
+    vertical-align:middle;
+    line-height:1.2;
+}
+
+@media (max-width:636px) {
+    .item-list {
+        line-height:75px;
+    }
+
+    .item-list li {
+        line-height:75px;
+        height:75px;
+        width:75px;
+    }
+}
+
+@media (max-width:423px) {
+    .item-list {
+        line-height:50px;
+    }
+
+    .item-list li {
+        line-height:50px;
+        height:50px;
+        width:50px;
+    }
+}
+
+#evaluating li {
+    cursor:pointer;
+}
+
+#favorites li {
+    cursor:move;
+}
+
+.item-list li:hover {
+    background:#CDF;
+}
+
+.item-list.sorting li:hover {
+    background:#F7F7F7;
+}
+
+#evaluating li.selected {
+    border:3px solid #7AC;
+}
+
+#evaluating, #buttons {
+    text-align:center;
+    margin:auto;
+}
+
+#evaluating li.notice {
+    width:auto;
+    height:auto;
+    max-width:260px;
+    margin:auto;
+    background:#F7F7F7;
+    border-radius:10px;
+    padding:30px 30px;
+    color:#000;
+    text-align:center;
+    line-height:1.4;
+    cursor:auto;
+    font-size:10pt;
+}
+
+#buttons {
+    margin-top:30px;
+    position:relative;
+    z-index:3;
+}
+</style>
+</head> 
+<body><h1>TMA episode sorter</h1><p>Helps you pick your favorite Magnus Archives episodes! Remember, there are a lot of them.</p><div id="container"><div id="picking"><ul id="evaluating" class="item-list"></ul><p id="buttons"><button id="pick">Pick</button> <button id="pass">Pass</button> <button id="undo">Undo</button> <button id="redo">Redo</button></p></div><div id="secondary"><h2>Found favorites</h2><ol id="favorites" class="item-list"></ol></div></div><script src="https://code.jquery.com/jquery-1.12.4.min.js"></script><script src="https://static.tumblr.com/ynlvdc8/f4Vqryay2/picker.js"></script><script src="https://static.tumblr.com/ynlvdc8/vfFqryay6/picker-ui.js"></script><script src="https://cdn.jsdelivr.net/npm/sortablejs@1.7.0/Sortable.min.js"></script><script>
+'use strict';
+
+var items = [ 
+{id: '001', name: '001 Anglerfish'},
+{id: '002', name: '002 Do Not Open'},
+{id: '003', name: '003 Across the Street'},
+{id: '004', name: '004 Pageturner'},
+{id: '005', name: '005 Thrown Away'},
+{id: '006', name: '006 Squirm'},
+{id: '007', name: '007 The Piper'},
+{id: '008', name: '008 Burned Out'},
+{id: '009', name: '009 A Father\'s Love'},
+{id: '010', name: '010 Vampire Killer'},
+{id: '011', name: '011 Dreamer'},
+{id: '012', name: '012 First Aid'},
+{id: '013', name: '013 Alone'},
+{id: '014', name: '014 Piecemeal'},
+{id: '015', name: '015 Lost Johns\' Cave'},
+{id: '016', name: '016 Arachnophobia'},
+{id: '017', name: '017 The Boneturner\'s Tale'},
+{id: '018', name: '018 The Man Upstairs'},
+{id: '019', name: '019 Confession'},
+{id: '020', name: '020 Desecrated Host'},
+{id: '021', name: '021 Freefall'},
+{id: '022', name: '022 Colony'},
+{id: '023', name: '023 Schwartzwald'},
+{id: '024', name: '024 Strange Music'},
+{id: '025', name: '025 Growing Dark'},
+{id: '026', name: '026 A Distortion'},
+{id: '027', name: '027 A Sturdy Lock'},
+{id: '028', name: '028 Skintight'},
+{id: '029', name: '029 Cheating Death'},
+{id: '030', name: '030 Killing Floor'},
+{id: '031', name: '031 First Hunt'},
+{id: '032', name: '032 Hive'},
+{id: '033', name: '033 Boatswain\'s Call'},
+{id: '034', name: '034 Anatomy Class'},
+{id: '035', name: '035 Old Passages'},
+{id: '036', name: '036 Taken Ill'},
+{id: '037', name: '037 Burnt Offering'},
+{id: '038', name: '038 Lost and Found'},
+{id: '039', name: '039 Infestation'},
+{id: '040', name: '040 Human Remains'},
+{id: '041', name: '041 Too Deep'},
+{id: '042', name: '042 Grifter\'s Bone'},
+{id: '043', name: '043 Section 31'},
+{id: '044', name: '044 Tightrope'},
+{id: '045', name: '045 Blood Bag'},
+{id: '046', name: '046 Literary Heights'},
+{id: '047', name: '047 The New Door'},
+{id: '048', name: '048 Lost in the Crowd'},
+{id: '049', name: '049 The Butcher\'s Window'},
+{id: '050', name: '050 Foundations'},
+{id: '051', name: '051 High Pressure'},
+{id: '052', name: '052 Exceptional Risk'},
+{id: '053', name: '053 Crusader'},
+{id: '054', name: '054 Still Life'},
+{id: '055', name: '055 Pest Control'},
+{id: '056', name: '056 Children of the Night'},
+{id: '057', name: '057 Personal Space'},
+{id: '058', name: '058 Trail Rations'},
+{id: '059', name: '059 Recluse'},
+{id: '060', name: '060 The Observer Effect'},
+{id: '061', name: '061 Hard Shoulder'},
+{id: '062', name: '062 First Edition'},
+{id: '063', name: '063 The End of the Tunnel'},
+{id: '064', name: '064 Burial Rites'},
+{id: '065', name: '065 Binary'},
+{id: '066', name: '066 Held In Customs'},
+{id: '067', name: '067 Burning Desire'},
+{id: '068', name: '068 The Tale of a Field Hospital'},
+{id: '069', name: '069 Thought for the Day'},
+{id: '070', name: '070 Book of the Dead'},
+{id: '071', name: '071 Underground'},
+{id: '072', name: '072 Takeaway'},
+{id: '073', name: '073 Police Lights'},
+{id: '074', name: '074 Fatigue'},
+{id: '075', name: '075 A Long Way Down'},
+{id: '076', name: '076 The Smell of Blood'},
+{id: '077', name: '077 The Kind Mother'},
+{id: '078', name: '078 Distant Cousin'},
+{id: '079', name: '079 Hide and Seek'},
+{id: '080', name: '080 The Librarian'},
+{id: '081', name: '081 A Guest for Mr. Spider'},
+{id: '082', name: '082: The Eyewitnesses'},
+{id: '083', name: '083 Drawing a Blank'},
+{id: '084', name: '084 Possessive'},
+{id: '085', name: '085 Upon the Stair'},
+{id: '086', name: '086 Tucked In'},
+{id: '087', name: '087 The Uncanny Valley'},
+{id: '088', name: '088 Dig'},
+{id: '089', name: '089 Twice as Bright'},
+{id: '090', name: '090 Body Builder'},
+{id: '091', name: '091 The Coming Storm'},
+{id: '092', name: '092: Nothing Beside Remains'},
+{id: '093', name: '093 Contaminant'},
+{id: '094', name: '094 Dead Woman Walking'},
+{id: '095', name: '095 Absent Without Leave'},
+{id: '096', name: '096 Return to Sender'},
+{id: '097', name: '097 We All Ignore the Pit'},
+{id: '098', name: '098 Lights Out'},
+{id: '099', name: '099 Dust to Dust'},
+{id: '100', name: '100 I Guess You Had To Be There'},
+{id: '101', name: '101 Another Twist'},
+{id: '102', name: '102 Nesting Instinct'},
+{id: '103', name: '103 Cruelty Free'},
+{id: '104', name: '104 Sneak Preview'},
+{id: '105', name: '105 Total War'},
+{id: '106', name: '106 A Matter of Perspective'},
+{id: '107', name: '107 Third Degree'},
+{id: '108', name: '108 Monologue '},
+{id: '109', name: '109 Nightfall'},
+{id: '110', name: '110 Creature Feature'},
+{id: '111', name: '111 Family Business'},
+{id: '112', name: '112 Thrill of the Chase'},
+{id: '113', name: '113 Breathing Room'},
+{id: '114', name: '114 Cracked Foundation'},
+{id: '115', name: '115 Taking Stock'},
+{id: '116', name: '116 The Show Must Go On'},
+{id: '117', name: '117 Testament'},
+{id: '118', name: '118 The Masquerade'},
+{id: '119', name: '119 Stranger And Stranger'},
+{id: '120', name: '120 Eye Contact'},
+{id: '121', name: '121 Far Away'},
+{id: '122', name: '122 Zombie'},
+{id: '123', name: '123 Web Development'},
+{id: '124', name: '124 Left Hanging'},
+{id: '125', name: '125 Civilian Casualties'},
+{id: '126', name: '126 Sculptor\'s Tool'},
+{id: '127', name: '127 Remains to be Seen'},
+{id: '128', name: '128 Heavy Goods'},
+{id: '129', name: '129 Submerged'},
+{id: '130', name: '130 Meat'},
+{id: '131', name: '131 Flesh'},
+{id: '132', name: '132 Entombed'},
+{id: '133', name: '133 Dead Horse'},
+{id: '134', name: '134 Time of Revelation'},
+{id: '135', name: '135 Dark Matter'},
+{id: '136', name: '136 The Puppeteer'},
+{id: '137', name: '137 Nemesis'},
+{id: '138', name: '138 The Architecture of Fear'},
+{id: '139', name: '139 Chosen'},
+{id: '140', name: '140 The Movement of the Heavens'},
+{id: '141', name: '141 Doomed Voyage'},
+{id: '142', name: '142 Scrutiny'},
+{id: '143', name: '143 Heart of Darkness'},
+{id: '144', name: '144 Decrypted'},
+{id: '145', name: '145 Infectious Doubts'},
+{id: '146', name: '146 Threshold'},
+{id: '147', name: '147 Weaver'},
+{id: '148', name: '148 Extended Surveillance'},
+{id: '149', name: '149 Concrete Jungle'},
+{id: '150', name: '150 Cul-de-Sac'},
+{id: '151', name: '151 Big Picture'},
+{id: '152', name: '152 A Gravedigger\'s Envy'},
+{id: '153', name: '153 Love Bombing'},
+{id: '154', name: '154 Bloody Mary'},
+{id: '155', name: '155 Cost of Living'},
+{id: '156', name: '156 Reflection'},
+{id: '157', name: '157 Rotten Core'},
+{id: '158', name: '158 Panopticon'},
+{id: '159', name: '159 The Last'},
+{id: '160', name: '160 The Eye Opens'},
+{id: '161', name: '161 Dwelling'},
+{id: '162', name: '162 A Cozy Cabin'},
+{id: '163', name: '163 In the Trenches'},
+{id: '164', name: '164 The Sick Village'},
+{id: '165', name: '165 Revolutions'},
+{id: '166', name: '166 The Worms'},
+{id: '167', name: '167 Curiosity'},
+{id: '168', name: '168 Roots'},
+{id: '169', name: '169 Fire Escape'},
+{id: '170', name: '170 Recollection'},
+{id: '171', name: '171 The Gardener'},
+{id: '172', name: '172 Strung Out'},
+{id: '173', name: '173 Night Night'},
+{id: '174', name: '174 The Great Beast'},
+{id: '175', name: '175 Epoch'},
+{id: '176', name: '176 Blood Ties'},
+{id: '177', name: '177 Wonderland'},
+{id: '178', name: '178 The Processing Line'},
+{id: '179', name: '179 Accomplice'},
+{id: '180', name: '180 Moving On'},
+{id: '181', name: '181 Ignorance'},
+{id: '182', name: '182 Wellbeing'},
+{id: '183', name: '183 Monument'},
+{id: '184', name: '184 Like Ants'},
+{id: '185', name: '185 Locked In'},
+{id: '186', name: '186 Quiet'},
+{id: '187', name: '187 Checking Out'},
+{id: '188', name: '188 Centre of Attention'},
+{id: '189', name: '189 Peers'},
+{id: '190', name: '190 Scavengers'},
+{id: '191', name: '191 What We Lose'},
+{id: '192', name: '192 An Appointment'},
+{id: '193', name: '193 A Stern Look'},
+{id: '194', name: '194 Parting'},
+{id: '195', name: '195 Adrift'},
+{id: '196', name: '196 This Old House'},
+{id: '197', name: '197 Connected'},
+{id: '198', name: '198 Precipice'},
+{id: '199', name: '199 Seeing It Through'},
+{id: '200', name: '200 Last Words'}
+];
+
+var myPicker = new picker.Picker({
+    items: items
+});
+
+var pickerUI = new PickerUI(myPicker, {
+    elements: {
+        pick: "#pick",
+        pass: "#pass",
+        undo: "#undo",
+        redo: "#redo",
+        evaluating: "#evaluating",
+        favorites: "#favorites"
+    }
+});
+
+pickerUI.initialize();
+
+/* Sortable favorites - you can safely remove this, and the Sortable.min.js script, if you don't want to be able to sort your favorite list. */
+var sortable = new Sortable(pickerUI.elem.favorites.get(0), {
+    draggable: '.item',
+    animation: 100,
+    onStart: function() {
+        pickerUI.elem.favorites.addClass("sorting");
+    },
+    onEnd: function() {
+        pickerUI.elem.favorites.removeClass("sorting");
+    },
+    onUpdate: function() {
+        myPicker.setFavorites(pickerUI.elem.favorites.children().map(function() {
+            return pickerUI.getItem(this);
+        }).get());
+        pickerUI.update(true);
+    }
+});
+/* End sortable favorites */
+</script>
+</body>
+</html>
